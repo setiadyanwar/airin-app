@@ -53,7 +53,13 @@ class ProductsNotifier extends Notifier<ProductsState> {
     return const ProductsState();
   }
 
-  Future<void> loadProducts({bool refresh = false, String? categoryId, String? search}) async {
+  Future<void> loadProducts({
+    bool refresh = false,
+    String? categoryId,
+    String? search,
+    String? sortBy,
+    bool instantOnly = false,
+  }) async {
     if (refresh) {
       state = state.copyWith(isLoading: true, error: null, products: [], currentPage: 1);
     } else if (state.isLoadingMore || !state.hasMore) {
@@ -67,6 +73,8 @@ class ProductsNotifier extends Notifier<ProductsState> {
         page: refresh ? 1 : state.currentPage,
         categoryId: categoryId,
         search: search,
+        sortBy: sortBy,
+        instantOnly: instantOnly,
       );
 
       final newProducts = refresh ? response.data : [...state.products, ...response.data];
@@ -88,8 +96,19 @@ class ProductsNotifier extends Notifier<ProductsState> {
     }
   }
 
-  Future<void> refresh({String? categoryId, String? search}) async {
-    await loadProducts(refresh: true, categoryId: categoryId, search: search);
+  Future<void> refresh({
+    String? categoryId,
+    String? search,
+    String? sortBy,
+    bool instantOnly = false,
+  }) async {
+    await loadProducts(
+      refresh: true,
+      categoryId: categoryId,
+      search: search,
+      sortBy: sortBy,
+      instantOnly: instantOnly,
+    );
   }
 }
 

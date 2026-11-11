@@ -21,6 +21,8 @@ class Product {
   final DateTime createdAt;
   final DateTime updatedAt;
   final String? supportInfo;
+  final String? tagline;
+  final String? durationLabel;
 
   const Product({
     required this.id,
@@ -45,6 +47,8 @@ class Product {
     required this.createdAt,
     required this.updatedAt,
     this.supportInfo,
+    this.tagline,
+    this.durationLabel,
   });
 
   bool get isPatungan => type == 'patungan';
@@ -81,6 +85,8 @@ class Product {
           ? DateTime.tryParse(json['updated_at'].toString()) ?? DateTime.now()
           : DateTime.now(),
       supportInfo: json['support_info']?.toString(),
+      tagline: json['tagline']?.toString(),
+      durationLabel: json['duration_label']?.toString(),
     );
   }
 }

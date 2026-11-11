@@ -19,6 +19,8 @@ class CatalogRepository {
     int limit = 20,
     String? categoryId,
     String? search,
+    String? sortBy,
+    bool instantOnly = false,
   }) async {
     final queryParams = <String, dynamic>{
       'page': page,
@@ -26,6 +28,8 @@ class CatalogRepository {
     };
     if (categoryId != null) queryParams['category_id'] = categoryId;
     if (search != null && search.isNotEmpty) queryParams['search'] = search;
+    if (sortBy != null && sortBy.isNotEmpty) queryParams['sort_by'] = sortBy;
+    if (instantOnly) queryParams['instant_only'] = true;
 
     final response = await _apiService.get('/products', queryParameters: queryParams);
     return PaginatedResponse.fromJson(
