@@ -1,166 +1,210 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/models.dart';
 import '../data/repository.dart';
 
-final productsProvider = NotifierProvider<ProductsNotifier, ProductsState>(ProductsNotifier.new);
-
-class ProductsState {
-  final List<Product> products;
-  final bool isLoading;
-  final bool isLoadingMore;
-  final String? error;
-  final int currentPage;
-  final int lastPage;
-  final bool hasMore;
-
-  const ProductsState({
-    this.products = const [],
-    this.isLoading = false,
-    this.isLoadingMore = false,
-    this.error,
-    this.currentPage = 1,
-    this.lastPage = 1,
-    this.hasMore = true,
-  });
-
-  ProductsState copyWith({
-    List<Product>? products,
-    bool? isLoading,
-    bool? isLoadingMore,
-    String? error,
-    int? currentPage,
-    int? lastPage,
-    bool? hasMore,
-  }) {
-    return ProductsState(
-      products: products ?? this.products,
-      isLoading: isLoading ?? this.isLoading,
-      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
-      error: error,
-      currentPage: currentPage ?? this.currentPage,
-      lastPage: lastPage ?? this.lastPage,
-      hasMore: hasMore ?? this.hasMore,
-    );
-  }
-}
-
-class ProductsNotifier extends Notifier<ProductsState> {
-  late final CatalogRepository _repository;
-
-  @override
-  ProductsState build() {
-    _repository = ref.read(catalogRepositoryProvider);
-    return const ProductsState();
-  }
-
-  Future<void> loadProducts({
-    bool refresh = false,
-    String? categoryId,
-    String? search,
-    String? sortBy,
-    bool instantOnly = false,
-  }) async {
-    if (refresh) {
-      state = state.copyWith(isLoading: true, error: null, products: [], currentPage: 1);
-    } else if (state.isLoadingMore || !state.hasMore) {
-      return;
-    } else {
-      state = state.copyWith(isLoadingMore: true);
-    }
-
-    try {
-      final response = await _repository.getProducts(
-        page: refresh ? 1 : state.currentPage,
-        categoryId: categoryId,
-        search: search,
-        sortBy: sortBy,
-        instantOnly: instantOnly,
-      );
-
-      final newProducts = refresh ? response.data : [...state.products, ...response.data];
-      state = state.copyWith(
-        products: newProducts,
-        isLoading: false,
-        isLoadingMore: false,
-        currentPage: response.currentPage,
-        lastPage: response.lastPage,
-        hasMore: response.currentPage < response.lastPage,
-        error: null,
-      );
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        isLoadingMore: false,
-        error: e.toString(),
-      );
-    }
-  }
-
-  Future<void> refresh({
-    String? categoryId,
-    String? search,
-    String? sortBy,
-    bool instantOnly = false,
-  }) async {
-    await loadProducts(
-      refresh: true,
-      categoryId: categoryId,
-      search: search,
-      sortBy: sortBy,
-      instantOnly: instantOnly,
-    );
-  }
-}
-
-// Product Detail - use FutureProvider.family for simple async loading with parameter
-final productDetailProvider = FutureProvider.family<Product, String>((ref, productId) async {
-  final repository = ref.read(catalogRepositoryProvider);
-  return repository.getProduct(productId);
+// Theme Mode Provider
+final themeModeProvider = StateNotifierProvider<ThemeModeNotifier, ThemeMode>((ref) {
+  return ThemeModeNotifier();
 });
 
-final categoriesProvider = NotifierProvider<CategoriesNotifier, CategoriesState>(CategoriesNotifier.new);
+class ThemeModeNotifier extends StateNotifier<ThemeMode> {
+  ThemeModeNotifier() : super(ThemeMode.dark); // Default dark mode ala Airin Store Apple style
 
-class CategoriesState {
-  final List<Category> categories;
-  final bool isLoading;
-  final String? error;
+  void toggleTheme() {
+    state = state == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+  }
+}
 
-  const CategoriesState({
-    this.categories = const [],
-    this.isLoading = false,
-    this.error,
+// Products Filter State
+class CatalogFilterState {
+  final String category;
+  final String searchQuery;
+  final String sortBy;
+  final bool instantOnly;
+
+  const CatalogFilterState({
+    this.category = 'all',
+    this.searchQuery = '',
+    this.sortBy = 'terpopuler',
+    this.instantOnly = false,
   });
 
-  CategoriesState copyWith({
-    List<Category>? categories,
-    bool? isLoading,
-    String? error,
+  CatalogFilterState copyWith({
+    String? category,
+    String? searchQuery,
+    String? sortBy,
+    bool? instantOnly,
   }) {
-    return CategoriesState(
-      categories: categories ?? this.categories,
-      isLoading: isLoading ?? this.isLoading,
-      error: error,
+    return CatalogFilterState(
+      category: category ?? this.category,
+      searchQuery: searchQuery ?? this.searchQuery,
+      sortBy: sortBy ?? this.sortBy,
+      instantOnly: instantOnly ?? this.instantOnly,
     );
   }
 }
 
-class CategoriesNotifier extends Notifier<CategoriesState> {
-  late final CatalogRepository _repository;
+final catalogFilterProvider = StateNotifierProvider<CatalogFilterNotifier, CatalogFilterState>((ref) {
+  return CatalogFilterNotifier();
+});
 
-  @override
-  CategoriesState build() {
-    _repository = ref.read(catalogRepositoryProvider);
-    loadCategories();
-    return const CategoriesState();
+class CatalogFilterNotifier extends StateNotifier<CatalogFilterState> {
+  CatalogFilterNotifier() : super(const CatalogFilterState());
+
+  void setCategory(String category) {
+    state = state.copyWith(category: category);
   }
 
-  Future<void> loadCategories() async {
-    state = state.copyWith(isLoading: true, error: null);
-    try {
-      final categories = await _repository.getCategories();
-      state = state.copyWith(categories: categories, isLoading: false, error: null);
-    } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
-    }
+  void setSearchQuery(String query) {
+    state = state.copyWith(searchQuery: query);
+  }
+
+  void setSortBy(String sortBy) {
+    state = state.copyWith(sortBy: sortBy);
+  }
+
+  void toggleInstantOnly() {
+    state = state.copyWith(instantOnly: !state.instantOnly);
+  }
+
+  void reset() {
+    state = const CatalogFilterState();
   }
 }
+
+// Products Provider
+final productsProvider = FutureProvider<List<ProductItem>>((ref) async {
+  final repository = ref.watch(catalogRepositoryProvider);
+  final filter = ref.watch(catalogFilterProvider);
+  return repository.getProducts(
+    category: filter.category,
+    search: filter.searchQuery,
+    sortBy: filter.sortBy,
+    instantOnly: filter.instantOnly,
+  );
+});
+
+// Single Product Provider
+final productDetailProvider = FutureProvider.family<ProductItem?, String>((ref, id) async {
+  final repository = ref.watch(catalogRepositoryProvider);
+  return repository.getProduct(id);
+});
+
+// Patungan List Provider
+final patunganListProvider = FutureProvider<List<PatunganItem>>((ref) async {
+  final repository = ref.watch(catalogRepositoryProvider);
+  return repository.getPatunganList();
+});
+
+// Local Orders / History Provider
+final orderHistoryProvider = StateNotifierProvider<OrderHistoryNotifier, List<OrderItem>>((ref) {
+  return OrderHistoryNotifier();
+});
+
+class OrderHistoryNotifier extends StateNotifier<List<OrderItem>> {
+  OrderHistoryNotifier() : super([
+    OrderItem(
+      orderId: 'INV-AIRIN-89211',
+      productId: 'gemini-pro-18m',
+      productName: 'Google Gemini Pro 18 Bulan',
+      amount: 23000,
+      uniqueCode: 147,
+      totalAmount: 23147,
+      customerName: 'Setiady',
+      customerContact: '081234567890',
+      customerEmail: 'setiady@gmail.com',
+      status: 'active',
+      createdAt: DateTime.now().subtract(const Duration(days: 2)),
+      accountDetails: 'Klaim link aktivasi resmi telah sukses terhubung ke email Anda.',
+      warrantyInfo: 'Garansi resmi 18 bulan aktif hingga 2028.',
+    ),
+  ]);
+
+  void addOrder(OrderItem order) {
+    state = [order, ...state];
+  }
+}
+
+// User Profile & Auth Provider ala airin-store AuthContext
+class UserProfile {
+  final String id;
+  final String name;
+  final String email;
+  final String? phone;
+  final String role;
+  final double? kreapayBalance;
+
+  const UserProfile({
+    required this.id,
+    required this.name,
+    required this.email,
+    this.phone,
+    this.role = 'customer',
+    this.kreapayBalance = 150000.0,
+  });
+
+  double get balance => kreapayBalance ?? 150000.0;
+
+  UserProfile copyWith({
+    String? id,
+    String? name,
+    String? email,
+    String? phone,
+    String? role,
+    double? kreapayBalance,
+  }) {
+    return UserProfile(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
+      role: role ?? this.role,
+      kreapayBalance: kreapayBalance ?? balance,
+    );
+  }
+}
+
+class AuthNotifier extends StateNotifier<UserProfile?> {
+  AuthNotifier()
+      : super(const UserProfile(
+          id: 'user_1',
+          name: 'Setiady',
+          email: 'setiady@gmail.com',
+          phone: '081234567890',
+          role: 'customer',
+          kreapayBalance: 150000.0,
+        ));
+
+  void login(String name, String email, String? phone) {
+    state = UserProfile(
+      id: 'user_${DateTime.now().millisecondsSinceEpoch}',
+      name: name.isNotEmpty ? name : 'Pelanggan Airin',
+      email: email,
+      phone: phone,
+      role: 'customer',
+      kreapayBalance: 150000.0,
+    );
+  }
+
+  void topUpKreaPay(double amount) {
+    if (state != null) {
+      state = state!.copyWith(kreapayBalance: state!.balance + amount);
+    }
+  }
+
+  void deductKreaPay(double amount) {
+    if (state != null && state!.balance >= amount) {
+      state = state!.copyWith(kreapayBalance: state!.balance - amount);
+    }
+  }
+
+  void logout() {
+    state = null;
+  }
+}
+
+final authProvider = StateNotifierProvider<AuthNotifier, UserProfile?>((ref) {
+  return AuthNotifier();
+});
+

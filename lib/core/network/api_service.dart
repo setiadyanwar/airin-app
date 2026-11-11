@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiService {
@@ -6,7 +7,15 @@ class ApiService {
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
   ApiService._internal() {
-    final baseUrl = dotenv.env['API_BASE_URL'] ?? 'https://airin.my.id/api';
+    var baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://localhost:3000/api';
+
+    // Di Android emulator, 'localhost' laptop diakses via alias 10.0.2.2
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      baseUrl = baseUrl
+          .replaceAll('localhost', '10.0.2.2')
+          .replaceAll('127.0.0.1', '10.0.2.2');
+    }
+
     _dio = Dio(
       BaseOptions(
         baseUrl: baseUrl,

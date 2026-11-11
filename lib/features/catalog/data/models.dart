@@ -1,228 +1,208 @@
-class Product {
+double _parseDouble(dynamic val, [double def = 0.0]) {
+  if (val == null) return def;
+  if (val is num) return val.toDouble();
+  if (val is String) return double.tryParse(val) ?? def;
+  return def;
+}
+
+int _parseInt(dynamic val, [int def = 0]) {
+  if (val == null) return def;
+  if (val is num) return val.toInt();
+  if (val is String) return int.tryParse(val) ?? def;
+  return def;
+}
+
+class ProductItem {
   final String id;
   final String name;
-  final String? description;
-  final String? longDescription;
-  final String? imageUrl;
-  final String? thumbnailUrl;
-  final double price;
-  final double? originalPrice;
-  final int stock;
-  final String stockStatus;
-  final double? rating;
+  final String category; // 'all' | 'ai' | 'streaming' | 'productivity' | 'games'
+  final String tagline;
+  final String description;
+  final double originalPrice;
+  final double salePrice;
+  final String durationLabel;
+  final List<String> features;
+  final String activationMethod;
+  final String warranty;
+  final String stockStatus; // 'ready' | 'limited' | 'out'
+  final int stockCount;
+  final bool isPopular;
+  final String? itemkuUrl;
+  final double rating;
   final int soldCount;
   final bool isInstant;
-  final String type;
-  final String? categoryId;
-  final String? categoryName;
-  final List<String>? features;
-  final List<ProductVariant> variants;
-  final bool isActive;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-  final String? supportInfo;
-  final String? tagline;
-  final String? durationLabel;
+  final String? image;
 
-  const Product({
+  const ProductItem({
     required this.id,
     required this.name,
-    this.description,
-    this.longDescription,
-    this.imageUrl,
-    this.thumbnailUrl,
-    required this.price,
-    this.originalPrice,
-    required this.stock,
-    required this.stockStatus,
-    this.rating,
-    this.soldCount = 0,
-    required this.isInstant,
+    required this.category,
+    this.tagline = '',
+    this.description = '',
+    required this.originalPrice,
+    required this.salePrice,
+    this.durationLabel = '1 bulan',
+    this.features = const [],
+    this.activationMethod = 'Instan via link / kredensial akun',
+    this.warranty = 'Garansi penuh selama masa aktif',
+    this.stockStatus = 'ready',
+    this.stockCount = 10,
+    this.isPopular = false,
+    this.itemkuUrl,
+    this.rating = 4.9,
+    this.soldCount = 150,
+    this.isInstant = true,
+    this.image,
+  });
+
+  bool get isInStock => stockStatus != 'out' && stockCount > 0;
+
+  int get discountPercent {
+    if (originalPrice <= 0 || salePrice >= originalPrice) return 0;
+    return (((originalPrice - salePrice) / originalPrice) * 100).round();
+  }
+
+  factory ProductItem.fromJson(Map<String, dynamic> json) {
+    return ProductItem(
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      category: json['category']?.toString() ?? 'ai',
+      tagline: json['tagline']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+      originalPrice: _parseDouble(json['originalPrice'] ?? json['original_price'], 0.0),
+      salePrice: _parseDouble(json['salePrice'] ?? json['price'] ?? json['sale_price'], 0.0),
+      durationLabel: json['durationLabel'] ?? json['duration_label']?.toString() ?? '1 bulan',
+      features: (json['features'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      activationMethod: json['activationMethod'] ?? json['activation_method']?.toString() ?? 'Link aktivasi resmi',
+      warranty: json['warranty']?.toString() ?? 'Garansi penuh',
+      stockStatus: json['stockStatus'] ?? json['stock_status']?.toString() ?? 'ready',
+      stockCount: _parseInt(json['stockCount'] ?? json['stock'], 10),
+      isPopular: json['isPopular'] == true,
+      itemkuUrl: json['itemkuUrl']?.toString(),
+      rating: _parseDouble(json['rating'], 4.9),
+      soldCount: _parseInt(json['soldCount'] ?? json['sold_count'], 100),
+      isInstant: json['isInstant'] == true || json['is_instant'] == true,
+      image: json['image']?.toString() ?? json['image_url']?.toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'category': category,
+      'tagline': tagline,
+      'description': description,
+      'originalPrice': originalPrice,
+      'salePrice': salePrice,
+      'durationLabel': durationLabel,
+      'features': features,
+      'activationMethod': activationMethod,
+      'warranty': warranty,
+      'stockStatus': stockStatus,
+      'stockCount': stockCount,
+      'isPopular': isPopular,
+      'itemkuUrl': itemkuUrl,
+      'rating': rating,
+      'soldCount': soldCount,
+      'isInstant': isInstant,
+      'image': image,
+    };
+  }
+}
+
+class PatunganItem {
+  final String id;
+  final String name;
+  final String category;
+  final String type; // 'family_official' | 'private_profile' | 'team_workspace'
+  final String typeLabel;
+  final String tagline;
+  final String description;
+  final double originalFullPrice;
+  final double pricePerUser;
+  final String durationLabel;
+  final int groupNumber;
+  final int totalSlots;
+  final int filledSlots;
+  final List<String> features;
+  final List<String> rules;
+  final bool isHot;
+
+  const PatunganItem({
+    required this.id,
+    required this.name,
+    required this.category,
     required this.type,
-    this.categoryId,
-    this.categoryName,
-    this.features,
-    this.variants = const [],
-    required this.isActive,
-    required this.createdAt,
-    required this.updatedAt,
-    this.supportInfo,
-    this.tagline,
-    this.durationLabel,
+    required this.typeLabel,
+    required this.tagline,
+    required this.description,
+    required this.originalFullPrice,
+    required this.pricePerUser,
+    required this.durationLabel,
+    required this.groupNumber,
+    required this.totalSlots,
+    required this.filledSlots,
+    required this.features,
+    required this.rules,
+    this.isHot = false,
   });
 
-  bool get isPatungan => type == 'patungan';
-  bool get isInStock => stock > 0;
+  int get remainingSlots => totalSlots - filledSlots;
+  bool get isFull => filledSlots >= totalSlots;
 
-  factory Product.fromJson(Map<String, dynamic> json) {
-    return Product(
+  factory PatunganItem.fromJson(Map<String, dynamic> json) {
+    return PatunganItem(
       id: json['id']?.toString() ?? '',
       name: json['name']?.toString() ?? '',
-      description: json['description']?.toString(),
-      longDescription: json['long_description']?.toString(),
-      imageUrl: json['image_url']?.toString(),
-      thumbnailUrl: json['thumbnail_url']?.toString(),
-      price: (json['price'] as num?)?.toDouble() ?? 0.0,
-      originalPrice: (json['original_price'] as num?)?.toDouble(),
-      stock: (json['stock'] as num?)?.toInt() ?? 0,
-      stockStatus: json['stock_status']?.toString() ?? 'out_of_stock',
-      rating: (json['rating'] as num?)?.toDouble(),
-      soldCount: (json['sold_count'] as num?)?.toInt() ?? 0,
-      isInstant: json['is_instant'] == true,
-      type: json['type']?.toString() ?? 'regular',
-      categoryId: json['category_id']?.toString(),
-      categoryName: json['category_name']?.toString(),
-      features: (json['features'] as List?)?.map((e) => e.toString()).toList(),
-      variants: (json['variants'] as List?)
-          ?.map((e) => ProductVariant.fromJson(e as Map<String, dynamic>))
-          .toList() ??
-          [],
-      isActive: json['is_active'] == true,
-      createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()
-          : DateTime.now(),
-      updatedAt: json['updated_at'] != null
-          ? DateTime.tryParse(json['updated_at'].toString()) ?? DateTime.now()
-          : DateTime.now(),
-      supportInfo: json['support_info']?.toString(),
-      tagline: json['tagline']?.toString(),
-      durationLabel: json['duration_label']?.toString(),
+      category: json['category']?.toString() ?? 'ai',
+      type: json['type']?.toString() ?? 'family_official',
+      typeLabel: json['typeLabel'] ?? json['type_label']?.toString() ?? 'Resmi Family',
+      tagline: json['tagline']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+      originalFullPrice: _parseDouble(json['originalFullPrice'] ?? json['official_price'], 0.0),
+      pricePerUser: _parseDouble(json['pricePerUser'] ?? json['price'], 0.0),
+      durationLabel: json['durationLabel'] ?? json['duration_label']?.toString() ?? '1 bulan',
+      groupNumber: _parseInt(json['groupNumber'] ?? json['group_number'], 1),
+      totalSlots: _parseInt(json['totalSlots'] ?? json['total_slots'], 4),
+      filledSlots: _parseInt(json['filledSlots'] ?? json['filled_slots'], 0),
+      features: (json['features'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      rules: (json['rules'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      isHot: json['isHot'] == true,
     );
   }
 }
 
-class ProductVariant {
-  final String id;
+class OrderItem {
+  final String orderId;
   final String productId;
-  final String name;
-  final String? sku;
-  final double price;
-  final double? originalPrice;
-  final int stock;
-  final bool isActive;
-  final Map<String, dynamic>? attributes;
+  final String productName;
+  final double amount;
+  final int uniqueCode;
+  final double totalAmount;
+  final String customerName;
+  final String customerContact;
+  final String customerEmail;
+  final String status; // 'unpaid' | 'paid' | 'active' | 'completed' | 'expired'
   final DateTime createdAt;
-  final DateTime updatedAt;
+  final String? qrisString;
+  final String? accountDetails;
+  final String? warrantyInfo;
 
-  const ProductVariant({
-    required this.id,
+  const OrderItem({
+    required this.orderId,
     required this.productId,
-    required this.name,
-    this.sku,
-    required this.price,
-    this.originalPrice,
-    required this.stock,
-    required this.isActive,
-    this.attributes,
+    required this.productName,
+    required this.amount,
+    required this.uniqueCode,
+    required this.totalAmount,
+    required this.customerName,
+    required this.customerContact,
+    required this.customerEmail,
+    required this.status,
     required this.createdAt,
-    required this.updatedAt,
+    this.qrisString,
+    this.accountDetails,
+    this.warrantyInfo,
   });
-
-  bool get isInStock => stock > 0;
-
-  factory ProductVariant.fromJson(Map<String, dynamic> json) {
-    return ProductVariant(
-      id: json['id']?.toString() ?? '',
-      productId: json['product_id']?.toString() ?? '',
-      name: json['name']?.toString() ?? '',
-      sku: json['sku']?.toString(),
-      price: (json['price'] as num?)?.toDouble() ?? 0.0,
-      originalPrice: (json['original_price'] as num?)?.toDouble(),
-      stock: (json['stock'] as num?)?.toInt() ?? 0,
-      isActive: json['is_active'] == true,
-      attributes: json['attributes'] as Map<String, dynamic>?,
-      createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()
-          : DateTime.now(),
-      updatedAt: json['updated_at'] != null
-          ? DateTime.tryParse(json['updated_at'].toString()) ?? DateTime.now()
-          : DateTime.now(),
-    );
-  }
-}
-
-class Category {
-  final String id;
-  final String name;
-  final String? description;
-  final String? imageUrl;
-  final String? parentId;
-  final int sortOrder;
-  final bool isActive;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-
-  const Category({
-    required this.id,
-    required this.name,
-    this.description,
-    this.imageUrl,
-    this.parentId,
-    required this.sortOrder,
-    required this.isActive,
-    required this.createdAt,
-    required this.updatedAt,
-  });
-
-  factory Category.fromJson(Map<String, dynamic> json) {
-    return Category(
-      id: json['id']?.toString() ?? '',
-      name: json['name']?.toString() ?? '',
-      description: json['description']?.toString(),
-      imageUrl: json['image_url']?.toString(),
-      parentId: json['parent_id']?.toString(),
-      sortOrder: (json['sort_order'] as num?)?.toInt() ?? 0,
-      isActive: json['is_active'] == true,
-      createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()
-          : DateTime.now(),
-      updatedAt: json['updated_at'] != null
-          ? DateTime.tryParse(json['updated_at'].toString()) ?? DateTime.now()
-          : DateTime.now(),
-    );
-  }
-}
-
-class PaginatedResponse<T> {
-  final List<T> data;
-  final int currentPage;
-  final int lastPage;
-  final int perPage;
-  final int total;
-  final String? firstPageUrl;
-  final String? lastPageUrl;
-  final String? nextPageUrl;
-  final String? prevPageUrl;
-
-  const PaginatedResponse({
-    required this.data,
-    required this.currentPage,
-    required this.lastPage,
-    required this.perPage,
-    required this.total,
-    this.firstPageUrl,
-    this.lastPageUrl,
-    this.nextPageUrl,
-    this.prevPageUrl,
-  });
-
-  factory PaginatedResponse.fromJson(
-    Map<String, dynamic> json,
-    T Function(Map<String, dynamic>) fromJsonT,
-  ) {
-    return PaginatedResponse<T>(
-      data: (json['data'] as List?)
-              ?.map((e) => fromJsonT(e as Map<String, dynamic>))
-              .toList() ??
-          [],
-      currentPage: (json['current_page'] as num?)?.toInt() ?? 1,
-      lastPage: (json['last_page'] as num?)?.toInt() ?? 1,
-      perPage: (json['per_page'] as num?)?.toInt() ?? 20,
-      total: (json['total'] as num?)?.toInt() ?? 0,
-      firstPageUrl: json['first_page_url']?.toString(),
-      lastPageUrl: json['last_page_url']?.toString(),
-      nextPageUrl: json['next_page_url']?.toString(),
-      prevPageUrl: json['prev_page_url']?.toString(),
-    );
-  }
 }
